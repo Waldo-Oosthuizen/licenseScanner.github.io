@@ -2,53 +2,55 @@ const startScanButton = document.getElementById('startScan');
 const captureButton = document.getElementById('capture');
 const video = document.getElementById('video');
 const canvas = document.createElement('canvas');
+const guideCanvas = document.getElementById('guideCanvas');
 
 // Function to start the video stream
 async function startScanner() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         video.srcObject = stream;
+
+        // Adjust guide canvas size to match video
+        guideCanvas.width = video.videoWidth;
+        guideCanvas.height = video.videoHeight;
+
+        drawGuideLines();
     } catch (err) {
         console.error('Error accessing the camera:', err);
     }
 }
 
-// Function to convert the captured image to grayscale
-function convertToGrayscale(context, width, height) {
-    const imageData = context.getImageData(0, 0, width, height);
-    const data = imageData.data;
+// Function to draw guide lines on the guide canvas
+function drawGuideLines() {
+    const context = guideCanvas.getContext('2d');
+    const { width, height } = guideCanvas;
 
-    for (let i = 0; i < data.length; i += 4) {
-        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        data[i] = avg;        // Red
-        data[i + 1] = avg;    // Green
-        data[i + 2] = avg;    // Blue
-        // data[i + 3] is the alpha channel (opacity)
-    }
+    // Clear the canvas
+    context.clearRect(0, 0, width, height);
 
-    context.putImageData(imageData, 0, 0);
-}
+    // Draw semi-transparent background
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    context.fillRect(0, 0, width, height);
 
-// Function to adjust contrast (optional)
-function adjustContrast(context, width, height, contrast) {
-    const imageData = context.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+    // Define the rectangle area for the barcode (centered on the screen)
+    const rectWidth = width * 0.8;
+    const rectHeight = height * 0.2;
+    const rectX = (width - rectWidth) / 2;
+    const rectY = (height - rectHeight) / 2;
 
-    for (let i = 0; i < data.length; i += 4) {
-        data[i] = factor * (data[i] - 128) + 128;        // Red
-        data[i + 1] = factor * (data[i + 1] - 128) + 128; // Green
-        data[i + 2] = factor * (data[i + 2] - 128) + 128; // Blue
-    }
+    // Clear the center rectangle
+    context.clearRect(rectX, rectY, rectWidth, rectHeight);
 
-    context.putImageData(imageData, 0, 0);
+    // Draw the rectangle border
+    context.strokeStyle = '#00FF00'; // Green guide lines
+    context.lineWidth = 2;
+    context.strokeRect(rectX, rectY, rectWidth, rectHeight);
 }
 
 // Function to capture an image and scan the PDF417 barcode
 async function captureAndScan() {
     const codeReader = new ZXing.BrowserPDF417Reader();
-    
-    // Set canvas dimensions to match the video feed
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -59,7 +61,6 @@ async function captureAndScan() {
     convertToGrayscale(context, canvas.width, canvas.height);
     adjustContrast(context, canvas.width, canvas.height, 50);
 
-    // Display the captured image for debugging (optional)
     const dataUrl = canvas.toDataURL('image/png');
     const image = new Image();
     image.src = dataUrl;
