@@ -13,14 +13,26 @@
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+            position: relative;
         }
+
         #video {
             width: 100%;
             max-width: 400px;
             height: auto;
             border: 1px solid #ccc;
             margin-top: 20px;
+            position: relative;
         }
+
+        #guideCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Allow clicks to pass through */
+            border: none;
+        }
+
         #capture {
             margin-top: 20px;
         }
@@ -30,6 +42,7 @@
     <button id="startScan">Start Camera</button>
     <button id="capture">Capture and Scan Barcode</button>
     <video id="video" autoplay></video>
+    <canvas id="guideCanvas"></canvas>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script src="app.js"></script>
 </body>
