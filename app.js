@@ -1,60 +1,34 @@
-const startScanButton = document.getElementById('startScan');
-const captureButton = document.getElementById('capture');
-const video = document.getElementById('video');
-const canvas = document.createElement('canvas');
+// Importing the necessary libraries
+import { BrowserPDF417Reader } from '@zxing/library';
 
-// Function to start video stream
-async function startScanner() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    video.srcObject = stream;
-}
+// Initialize the barcode reader
+const codeReader = new BrowserPDF417Reader();
 
-// Function to convert the image to grayscale
-function convertToGrayscale(context, width, height) {
-    const imageData = context.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        data[i] = avg;        // Red
-        data[i + 1] = avg;    // Green
-        data[i + 2] = avg;    // Blue
-        // data[i + 3] is the alpha channel (opacity)
-    }
-
-    context.putImageData(imageData, 0, 0);
-}
-
-// Function to capture a photo and scan the barcode
+// Capture and scan function
 async function captureAndScan() {
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
     const context = canvas.getContext('2d');
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert the image to grayscale
+    // Convert to grayscale and adjust contrast
     convertToGrayscale(context, canvas.width, canvas.height);
+    adjustContrast(context, canvas.width, canvas.height, 50);
 
-    // Display the image for debugging
+    // Create an image element for the captured frame
     const dataUrl = canvas.toDataURL('image/png');
     const image = new Image();
     image.src = dataUrl;
-    document.body.appendChild(image);  // Append the captured image to the body for inspection
+    document.body.appendChild(image);
 
     image.onload = async () => {
         try {
             const result = await codeReader.decodeFromImageElement(image);
             alert(`Scanned barcode: ${result.text}`);
         } catch (err) {
-            console.error(err);
+            console.error('Scanning failed:', err);
             alert('Failed to scan the barcode.');
         }
     };
 }
-
-// Event listeners
-startScanButton.addEventListener('click', startScanner);
-captureButton.addEventListener('click', captureAndScan);
